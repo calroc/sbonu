@@ -211,6 +211,48 @@ class PC(Person):
 
 
 class NPC(Person):
+
+    a = 100 # If I've had this much food
+    b = 10 #  for this many turns
+    #         then it's cool to reproduce.
+
+    def reproduce(self, location):
+        '''
+        Clone self at location.
+        '''
+        # Get the number of turns we've had enough food.
+        try:
+            turns_o_plenty = self.turns_o_plenty
+        except AttributeError:
+            self.turns_o_plenty = self.foods > self.a
+            return
+
+        delta = cmp(self.foods, self.a)
+        assert delta in (-1, 0, 1)
+
+        turns_o_plenty += delta
+
+        if turns_o_plenty > self.b:
+            self.clone(location)
+            turns_o_plenty = 0
+
+        elif turns_o_plenty < 0:
+            turns_o_plenty = 0
+
+        self.turns_o_plenty = turns_o_plenty
+
+    def clone(self, location):
+        '''
+        Create a clone of self at location.
+        '''
+        clone = NPC()
+        clone.immunities.update(self.immunities)
+        clone.infections[:] = [spore.spawn() for spore in self.infections]
+        for spore in clone.infections: spore.chain.append(clone)
+        clone.foods = self.foods = self.foods / 2
+        location.enter(clone)
+        return clone
+
     def program(self, location):
         '''
         Given self's current location, run a "program" of actions.
@@ -251,6 +293,9 @@ class NPC(Person):
 
             # Boy that was exhausting.
             self.foods -= 1
+
+        else:
+            self.reproduce(location)
 
     def whichWay(self, location):
         '''
@@ -366,6 +411,14 @@ class Space:
             # If there's anybody there, run their program.
             for person in location.occupants:
                 person.program(location)
+
+    def yieldPeople(self):
+        '''
+        Iterate through all the people in the space.
+        '''
+        for location in self.space.itervalues():
+            for person in location.occupants:
+                yield person
 
     def __str__(self):
         return '\n'.join(''.join(self._row(x)) for x in range(self.dim))
@@ -507,7 +560,7 @@ S = Spawner('cats', Alice, testSpore)
 ##Claire.afflict(Debbie)
 ##Debbie.afflict(Eve)
 
-s = Space()
+s = Space(food_growth_rate=30)
 for person in NPCs:
     location = s.getOrMake(
         random.choice(range(DIMENSION)),
@@ -525,25 +578,39 @@ _N = float(len(NPCs))
 def onestep(n):
     s.run()
     s.generate()
+
+    population = sum(1 for npc in s.yieldPeople())
     infected = sum(1 for npc in NPCs if npc.infections)/_N
+    if infected < 0.008:
+        return 'break'
+
     f = lambda npc: not npc.infections and npc.immunities.get('cats')  == 1
     immune = sum(1 for npc in NPCs if f(npc))/_N
-    print '%s %.02f %.02f %05i' % (str(s), infected, immune, n)
+
+    print '%s %.02f %.02f %05i %-i' % (str(s), infected, immune, n, population)
+##    print '%.02f %.02f %05i %-i' % (infected, immune, n, population)
+
     if infected + immune == 1:
         return 'break'
 ##    print ' '.join('%04i' % (npc.foods,) for npc in NPCs)
+
     sleep(1.0/23)
 
-for n in range(10000):
-    if onestep(n):
-        break
 
-print 'Virulence:', testSpore.virulence
-print 'Population:', int(_N)
-print 'Iterations:', n + 1
-print 'Dimensions: %i x %i' % (DIMENSION, DIMENSION)
-print 'Total calories:', _calories
-print 'Average stored: %.01f' % (sum(npc.foods for npc in NPCs)/_N,)
+def main():
+    for n in range(10000):
+        if onestep(n):
+            break
+
+    print 'Virulence:', testSpore.virulence
+    print 'Population:', int(_N)
+    print 'Iterations:', n + 1
+    print 'Dimensions: %i x %i' % (DIMENSION, DIMENSION)
+    print 'Total calories:', _calories
+    print 'Average stored: %.01f' % (sum(npc.foods for npc in NPCs)/_N,)
+
+if __name__ == '__main__':
+    main()
 
 
 ##for person in (Alice, Bob, Claire, Debbie, Eve):
