@@ -207,8 +207,7 @@ class Person:
 
 
 class PC(Person):
-    def __init__(self):
-        pass
+    pass
 
 
 class NPC(Person):
