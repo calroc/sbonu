@@ -132,6 +132,12 @@ class Food:
         return res
 
 
+class StarvationError(Exception):
+    '''
+    Raised by Persons when their food supply goes to zero.
+    '''
+
+
 class Person:
     '''
     Base class for PCs and NPCs.
@@ -261,6 +267,9 @@ class NPC(Person):
         # Try to eat some food.
         food = location.eat()
         self.foods += food
+
+        if self.foods <= 0:
+            raise StarvationError(repr(self))
 
         # Look around, see who's nearby.
         People = []
@@ -409,8 +418,13 @@ class Space:
                 continue
 
             # If there's anybody there, run their program.
-            for person in location.occupants:
-                person.program(location)
+            for person in location.occupants[:]:
+                try:
+                    person.program(location)
+                except StarvationError:
+                    location.leave(person)
+                    # This should be sufficient to cause the person to be
+                    # garbage-collected.
 
     def yieldPeople(self):
         '''
@@ -573,22 +587,23 @@ for _ in range(3):
 
 ##print str(s)
 
-_N = float(len(NPCs))
 
 def onestep(n):
     s.run()
     s.generate()
 
-    population = sum(1 for npc in s.yieldPeople())
-    infected = sum(1 for npc in NPCs if npc.infections)/_N
+    POP = list(s.yieldPeople())
+    _N = float(len(POP))
+
+    infected = sum(1 for npc in POP if npc.infections)/_N
     if infected < 0.008:
         return 'break'
 
     f = lambda npc: not npc.infections and npc.immunities.get('cats')  == 1
-    immune = sum(1 for npc in NPCs if f(npc))/_N
+    immune = sum(1 for npc in POP if f(npc))/_N
 
-    print '%s %.02f %.02f %05i %-i' % (str(s), infected, immune, n, population)
-##    print '%.02f %.02f %05i %-i' % (infected, immune, n, population)
+    print '%s %.02f %.02f %05i %-i' % (str(s), infected, immune, n, int(_N))
+##    print '%.02f %.02f %05i %-i' % (infected, immune, n, int(_N))
 
     if infected + immune == 1:
         return 'break'
@@ -602,12 +617,16 @@ def main():
         if onestep(n):
             break
 
+    POP = list(s.yieldPeople())
+    _N = float(len(POP))
+
     print 'Virulence:', testSpore.virulence
-    print 'Population:', int(_N)
+    print 'Initial Population:', len(NPCs)
+    print 'Eventual Population:', _N
     print 'Iterations:', n + 1
     print 'Dimensions: %i x %i' % (DIMENSION, DIMENSION)
     print 'Total calories:', _calories
-    print 'Average stored: %.01f' % (sum(npc.foods for npc in NPCs)/_N,)
+    print 'Average stored: %.01f' % (sum(npc.foods for npc in POP)/_N,)
 
 if __name__ == '__main__':
     main()
