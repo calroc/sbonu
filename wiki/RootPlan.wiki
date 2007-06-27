@@ -1,0 +1,15 @@
+#summary The basic plan for this software, in time and space.
+#labels Featured,Phase-Requirements,plan
+
+= A Simple and Fun Game =
+
+*Sbonu* is meant to be a fun game to play, in addition to illustrating the action of viral memes in a population.
+
+== Software Architecture ==
+
+The software has three layers:
+
+  # *Simulator* - A simple simulator (probably using MyHDL but perhaps Stackless Python) that models a field of "food" and a population of "NPCs" who live there.
+  # *UI* - Provides events that allows various "views" and/or "controllers" (in the MVC sense) to visualize the running sim and interact with it.
+  # *GUIs* - Several different "frontends" to permit interaction with the sim, thus making it a game.  I.e. Tkinter, curses, PyGame, graph rendering, &c.
+
