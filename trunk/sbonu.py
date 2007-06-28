@@ -662,12 +662,6 @@ def onestep(n):
         return 'break'
 ##    print ' '.join('%04i' % (npc.foods,) for npc in NPCs)
 
-    key = _stdscr.getch()
-    if (key == ord('q')) or (key == ord('Q')):
-        return 'break'
-    
-    sleep(1.0/23)
-
 def deinit_curses():
     global _stdscr
     _stdscr.clear();
@@ -679,9 +673,20 @@ def deinit_curses():
     curses.endwin()
 
 def main():
+    step_delay = 1.0/23
+
     for n in range(10000):
         if onestep(n):
             break
+        else:
+            key = _stdscr.getch()
+            if (key == ord('q')) or (key == ord('Q')):
+                break
+            elif key == ord('+'):
+                step_delay *= 0.5
+            elif key == ord('-'):
+                step_delay *= 1.5
+            sleep(step_delay)
 
     POP = list(s.yieldPeople())
     _N = float(len(POP))
