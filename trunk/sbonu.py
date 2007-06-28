@@ -731,24 +731,26 @@ def main():
 
     step_delay = 1.0/23
 
-    for n in range(10000):
-##        onestep(n, writer)
-        if onestep(n, writer):
-            break
-        else:
-            key = _stdscr.getch()
-            if (key == ord('q')) or (key == ord('Q')):
+    try:
+        for n in range(10000):
+    ##        onestep(n, writer)
+            if onestep(n, writer):
                 break
-            elif key == ord('+'):
-                step_delay *= 0.5
-            elif key == ord('-'):
-                step_delay *= 1.5
-            sleep(step_delay)
+            else:
+                key = _stdscr.getch()
+                if (key == ord('q')) or (key == ord('Q')):
+                    break
+                elif key == ord('+'):
+                    step_delay *= 0.5
+                elif key == ord('-'):
+                    step_delay *= 1.5
+                sleep(step_delay)
 
-    POP = list(s.yieldPeople())
-    _N = float(len(POP))
+        POP = list(s.yieldPeople())
+        _N = float(len(POP))
 
-    deinit_curses()
+    finally:
+        deinit_curses()
 
     print 'Virulence:', testSpore.virulence
     print 'Initial Population:', len(NPCs)
