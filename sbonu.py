@@ -302,6 +302,15 @@ class NPC(Person):
         location.enter(clone)
         return clone
 
+    def yieldNeighbours(self, location, distance):
+        '''
+        Yield all neighbours within distance of location.
+        '''
+        for place in location.getNearby(distance, Location.occupied):
+            for person in place.occupants:
+                if person != self:
+                    yield person
+
     def program(self, location):
         '''
         Given self's current location, run a "program" of actions.
@@ -310,7 +319,6 @@ class NPC(Person):
         # Try to eat some food.
         food = location.eat()
         self.foods += food
-
         if self.foods <= 0:
             raise StarvationError(repr(self))
 
@@ -318,40 +326,41 @@ class NPC(Person):
         if self.infections:
             random.choice(self.infections).act(self)
 
-        # Look around, see who's nearby.
-        People = []
-        for place in location.getNearby(2, Location.occupied):
-            People.extend(place.occupants)
-        People.remove(self)
-
         # Try to afflict one nearby person.
+        People = list(self.yieldNeighbours(location, 2))
         if People:
-            person = random.choice(People)
-            self.afflict(person)
+            self.afflict(random.choice(People))
 
         # If you didn't eat this turn, wander around a bit.
         if not food:
+            self.wander(location)
 
-            # Get our bearings and pick a direction.
-            x, y = location.coords
-            dx, dy = self.whichWay(location)
-
-            # Don't wander into dragon territory.
-            x = max((min((x + dx, DIMENSION)), 0))
-            y = max((min((y + dy, DIMENSION)), 0))
-
-            # Scout the terrain.
-            new_location = location.space.getOrMake(x, y)
-
-            # Make your move.
-            location.leave(self)
-            new_location.enter(self)
-
-            # Boy that was exhausting.
-            self.foods -= 1
-
+        # If you did, consider having a child.
         else:
             self.reproduce(location)
+
+    def wander(self, location):
+        '''
+        Wander around.
+        '''
+        # Get our bearings and pick a direction.
+        x, y = location.coords
+        dx, dy = self.whichWay(location)
+
+        x += dx; y += dy
+
+        # Wrap at the borders.
+        while x >= DIMENSION: x -= DIMENSION
+        while x < 0: x += DIMENSION
+        while y >= DIMENSION: y -= DIMENSION
+        while y < 0: y += DIMENSION
+
+        # Make your move.
+        location.leave(self)
+        location.space.getOrMake(x, y).enter(self)
+
+        # Boy that was exhausting.
+        self.foods -= 1
 
     def whichWay(self, location):
         '''
