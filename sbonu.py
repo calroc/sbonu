@@ -100,9 +100,12 @@ class Spore:
         Try to infect person, return a bool indicating success.
         '''
         if not person.immuneResponse(self):
-            self.chain.append(person)
+            self.register(person)
             return True
         return False
+
+    def register(self, person):
+        self.chain.append(person)
 
     def spawn(self):
         '''
@@ -110,6 +113,23 @@ class Spore:
         it self's chain of "vectors".
         '''
         return self.__class__(self.genus, self.chain)
+
+    def act(self, person):
+        if random.random() <= 0.05:
+            if person.foods <= 100:
+                return
+##            print person, 'has acted on', self
+            person.foods -= 20
+            author = self.chain[0]
+            cut = 6
+            for ancestor in self.chain[:-7:-1]:
+                cut -= 1
+                if ancestor.foods: # not dead..  FIXME
+                    ancestor.foods += 1
+                else:
+                    author.foods += 1
+            assert 0 <= cut <= 6
+            author.foods += 14 + cut
 
 
 class Food:
@@ -183,6 +203,9 @@ class Person:
         the attempt: True for no infection, False for infection.
         '''
         infected = spore.infects(self)
+
+        # Regardless, maybe we tithe..
+        spore.act(self)
 
         if infected:
             self.infection(spore)
@@ -273,7 +296,8 @@ class NPC(Person):
         clone = NPC()
         clone.immunities.update(self.immunities)
         clone.infections[:] = [spore.spawn() for spore in self.infections]
-        for spore in clone.infections: spore.chain.append(clone)
+        for spore in clone.infections:
+            spore.register(clone)
         clone.foods = self.foods = self.foods / 2
         location.enter(clone)
         return clone
@@ -289,6 +313,10 @@ class NPC(Person):
 
         if self.foods <= 0:
             raise StarvationError(repr(self))
+
+        # Maybe we tithe to some worthy cause.
+        if self.infections:
+            random.choice(self.infections).act(self)
 
         # Look around, see who's nearby.
         People = []
@@ -572,9 +600,9 @@ class Location:
             if n == 1:
                 occ = self.occupants[0]
                 if occ.infections:
-                    return '*'
+                    return '@'
                 else:
-                    return 'O'
+                    return 'o'
             elif n > 9:
                 return '+'
             else:
@@ -605,7 +633,12 @@ class Location:
 
 from time import sleep
 
-Alice, Bob, Claire, Debbie, Eve = (NPC() for _ in range(5))
+class VIP_NPC(NPC):
+    def reproduce(self, location):
+        pass
+
+Alice = VIP_NPC()
+Bob, Claire, Debbie, Eve = (NPC() for _ in range(4))
 
 ppl = (Alice, Bob, Claire, Debbie, Eve)
 NPCs = tuple(NPC() for _ in range(55)) + ppl
@@ -634,12 +667,18 @@ for _ in range(3):
 ##print str(s)
 
 
-def onestep(n):
+def onestep(n, w):
     s.run()
     s.generate()
 
     POP = list(s.yieldPeople())
     _N = float(len(POP))
+
+    fud = sum(
+        loc.food.amount
+        for loc in s.space.itervalues()
+        if loc.food
+        )
 
     infected = sum(1 for npc in POP if npc.infections)/_N
     if infected < 0.008:
@@ -648,6 +687,7 @@ def onestep(n):
     f = lambda npc: not npc.infections and npc.immunities.get('cats')  == 1
     immune = sum(1 for npc in POP if f(npc))/_N
 
+##    print '%s %.02f %.02f %05i %-3i %i' % (str(s), infected, immune, n, int(_N), Alice.foods)
     global _stdscr
     s.refresh()
     status = '%.02f %.02f %05i %-i' % (infected, immune, n, int(_N))
@@ -657,6 +697,9 @@ def onestep(n):
 ##    print '%s %.02f %.02f %05i %-i' % (str(s), infected, immune, n,
 ##                                       int(_N))
 ##    print '%.02f %.02f %05i %-i' % (infected, immune, n, int(_N))
+
+##    row = (n, infected, immune, _N, fud)
+##    w.writerow(row)
 
     if infected + immune == 1:
         return 'break'
@@ -673,10 +716,15 @@ def deinit_curses():
     curses.endwin()
 
 def main():
+##    import csv
+##    writer = csv.writer(open("sbonu.csv", "wb"))
+    writer = None
+
     step_delay = 1.0/23
 
     for n in range(10000):
-        if onestep(n):
+##        onestep(n, writer)
+        if onestep(n, writer):
             break
         else:
             key = _stdscr.getch()
