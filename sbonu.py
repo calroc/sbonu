@@ -494,8 +494,8 @@ class Space:
         return '\n'.join(''.join(self._row(x)) for x in range(self.dim))
 
     def refresh(self):
+        global _stdscr
         for y in range(self.dim):
-            global _stdscr
             _stdscr.move(y, 0)
             _stdscr.clrtoeol()
             for x in range(self.dim):
@@ -733,7 +733,6 @@ def main():
 
     try:
         for n in range(10000):
-    ##        onestep(n, writer)
             if onestep(n, writer):
                 break
             else:
@@ -763,23 +762,3 @@ def main():
 if __name__ == '__main__':
     main()
 
-
-##for person in (Alice, Bob, Claire, Debbie, Eve):
-##    print person
-##    print person.immunities
-##    print person.infections
-##    print
-
-##p([sorted((l.food.amount, l.coords) for l in N)])
-
-
-##
-##    >>> l = s.get(21, 40)
-##    >>> l
-##    <__main__.Location instance at 0xb663122c>
-##    >>> l.occupants.append(Alice)
-##    >>> m = s.getOrMake(21, 42)
-##    >>> m.occupants.append(Bob)
-##    >>> 
-##    [DEBUG ON]
-##    >>> Alice.program(l)
