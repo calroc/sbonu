@@ -1,26 +1,9 @@
 #!/usr/bin/env python
 import random
-from pprint import pprint as p
 import curses
-
-# Initialize curses
-_stdscr = curses.initscr()
-curses.start_color()
-curses.noecho()
-curses.cbreak()
-curses.curs_set(0)
-_stdscr.keypad(1)
-_stdscr.nodelay(1)
-
-# Initialize a bunch of colour pairs.
-BLACK_BLACK = 1
-RED_BLACK = 2
-GREEN_BLACK = 3
-BLUE_BLACK = 4
-curses.init_pair(BLACK_BLACK, curses.COLOR_BLACK, curses.COLOR_BLACK)
-curses.init_pair(RED_BLACK, curses.COLOR_RED, curses.COLOR_BLACK)
-curses.init_pair(GREEN_BLACK, curses.COLOR_GREEN, curses.COLOR_BLACK)
-curses.init_pair(BLUE_BLACK, curses.COLOR_BLUE, curses.COLOR_BLACK)
+from util import StarvationError
+from space import Space, Location, _calories
+from curses_sbonu import _stdscr
 
 # Width and height of the "map".
 DIMENSION = 50
@@ -31,10 +14,6 @@ _R = (-1, 0, 1)
 _spots = tuple((x, y) for x in _R for y in _R if x or y)
 # _spots now contains deltas which, if added to x, y coordinates will let
 # an NPC move one "space" in one of 8 directions.
-
-
-# Global count of all "food" that has been put in play.
-_calories = 0
 
 
 class Spawner:
@@ -130,12 +109,6 @@ class Spore:
                     author.foods += 1
             assert 0 <= cut <= 6
             author.foods += 14 + cut
-
-
-class StarvationError(Exception):
-    '''
-    Raised by Persons when their food supply goes to zero.
-    '''
 
 
 class Person:
@@ -369,7 +342,7 @@ S = Spawner('cats', Alice, testSpore)
 ##Claire.afflict(Debbie)
 ##Debbie.afflict(Eve)
 
-s = Space(food_growth_rate=30)
+s = Space(DIMENSION, food_growth_rate=30)
 for person in NPCs:
     location = s.getOrMake(
         random.choice(range(DIMENSION)),

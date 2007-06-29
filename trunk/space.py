@@ -3,6 +3,20 @@
 space.py - Encapsulates the world.  (Which is currently a 2D plane Toroid.
 
 '''
+import random
+import curses
+from util import StarvationError
+from curses_sbonu import (
+    _stdscr,
+    RED_BLACK,
+    GREEN_BLACK,
+    BLUE_BLACK,
+    BLACK_BLACK
+    )
+
+
+# Global count of all "food" that has been put in play.
+_calories = 0
 
 
 class Space:
@@ -10,10 +24,7 @@ class Space:
     Represents a 2-D grid and supports various behaviors.
     '''
 
-    def __init__(self,
-        dimension=DIMENSION,
-        food_growth_rate=30,
-        ):
+    def __init__(self, dimension, food_growth_rate=30):
         self.dim = dimension
         self.food_growth_rate = food_growth_rate
         self.space = {}
