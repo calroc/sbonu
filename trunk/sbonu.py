@@ -2,7 +2,7 @@
 import random
 import curses
 from util import StarvationError
-from space import Space, Location, _calories
+from space import Space, _calories
 from curses_sbonu import _stdscr
 
 # Width and height of the "map".
@@ -126,6 +126,9 @@ class Person:
         # Person's power supply.  Used to move, gotten from food and bonuses.
         self.foods = 100
 
+        # Set when the person enters a Space.
+        self.space = None
+
     def immuneResponse(self, spore):
         '''
         Resolve an attempt of spore to infect self.  Either an infection
@@ -228,22 +231,13 @@ class NPC(Person):
         clone.foods = self.foods = self.foods / 2
         return clone
 
-    def yieldNeighbours(self, location, distance):
-        '''
-        Yield all neighbours within distance of location.
-        '''
-        for place in location.getNearby(distance, Location.occupied):
-            for person in place.occupants:
-                if person != self:
-                    yield person
-
-    def program(self, location):
+    def program(self):
         '''
         Given self's current location, run a "program" of actions.
         '''
 
         # Try to eat some food.
-        food = location.eat()
+        food = self.space.forage(self)
         self.foods += food
         if self.foods <= 0:
             raise StarvationError(repr(self))
@@ -253,63 +247,39 @@ class NPC(Person):
             random.choice(self.infections).act(self)
 
         # Try to afflict one nearby person.
-        People = list(self.yieldNeighbours(location, 2))
+        People = list(self.space.yieldNeighbours(self, 2))
         if People:
             self.afflict(random.choice(People))
 
         # If you didn't eat this turn, wander around a bit.
         if not food:
-            self.wander(location)
+            self.wander()
 
         # If you did, consider having a child.
         else:
             clone = self.reproduce()
             if clone:
-                location.enter(clone)
+                self.space.newLife(self, clone)
 
-    def wander(self, location):
+    def wander(self):
         '''
         Wander around.
         '''
         # Get our bearings and pick a direction.
-        x, y = location.coords
-        dx, dy = self.whichWay(location)
+        dx, dy = self.whichWay()
 
-        x += dx; y += dy
+        # Make our move.
+        self.foods -= self.space.move(dx, dy, self)
 
-        # Wrap at the borders.
-        while x >= DIMENSION: x -= DIMENSION
-        while x < 0: x += DIMENSION
-        while y >= DIMENSION: y -= DIMENSION
-        while y < 0: y += DIMENSION
-
-        # Make your move.
-        location.leave(self)
-        location.space.getOrMake(x, y).enter(self)
-
-        # Boy that was exhausting.
-        self.foods -= 1
-
-    def whichWay(self, location):
+    def whichWay(self):
         '''
         Pick a direction of travel, return (dx, dy).
 
         This version looks for food in the immediate vicinity and moves
         towards it.  If there's no food it picks a direction at random.
         '''
-
-        nearby_food = location.getNearby(1, lambda loc: bool(loc.food))
-
-        if nearby_food:
-            xx, yy = random.choice(nearby_food).coords
-            x, y = location.coords
-            dx = xx - x
-            dy = yy - y
-
-        else:
-            dx, dy = random.choice(_spots)
-
-        return dx, dy
+        nearby_food = tuple(self.space.yieldNearbyFoods(self))
+        return random.choice(nearby_food or _spots)
 
 
 #########################################################################
@@ -337,12 +307,11 @@ S = Spawner('cats', Alice, testSpore)
 ##Debbie.afflict(Eve)
 
 s = Space(DIMENSION, food_growth_rate=30)
+
+R = random.randint
 for person in NPCs:
-    location = s.getOrMake(
-        random.choice(range(DIMENSION)),
-        random.choice(range(DIMENSION))
-        )
-    location.enter(person)
+    x, y = R(0, DIMENSION - 1), R(0, DIMENSION - 1)
+    s.enter(x, y, person)
 
 for _ in range(3):
     s.generate()

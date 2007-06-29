@@ -5,6 +5,7 @@ space.py - Encapsulates the world.  (Which is currently a 2D plane Toroid.
 '''
 import random
 import curses
+from math import sqrt
 from util import StarvationError
 from curses_sbonu import (
     _stdscr,
@@ -28,6 +29,71 @@ class Space:
         self.dim = dimension
         self.food_growth_rate = food_growth_rate
         self.space = {}
+        self.occupants = {}
+
+    def newLife(self, parent, child):
+        location = self.occupants[parent]
+        location.enter(child)
+        self.occupants[child] = location
+        child.space = self
+
+    def yieldNeighbours(self, person, distance=1):
+        '''
+        Yield all neighbours within distance of person.
+        '''
+        location = self.occupants[person]
+        for place in location.getNearby(distance, Location.occupied):
+            for other in place.occupants:
+                if person != other:
+                    yield other
+
+    def yieldNearbyFoods(self, person):
+        location = self.occupants[person]
+        nearby_food = location.getNearby(1, lambda loc: bool(loc.food))
+        x, y = location.coords
+        for food_spot in nearby_food:
+            xx, yy = food_spot.coords
+            yield xx - x, yy - y
+
+    def move(self, dx, dy, person):
+
+        location = self.occupants[person]
+
+        x, y = location.coords
+        x += dx; y += dy
+
+        # Wrap at the borders.
+        while x >= self.dim: x -= self.dim
+        while x < 0: x += self.dim
+        while y >= self.dim: y -= self.dim
+        while y < 0: y += self.dim
+
+        new_location = self.getOrMake(x, y)
+
+        if new_location is location:
+            return
+
+        location.leave(person)
+        new_location.enter(person)
+        self.occupants[person] = new_location
+
+        return int(round(sqrt(dx**2 + dy**2)))
+
+    def forage(self, person):
+        '''
+        Person is looking for food, return some (as an int.)
+        '''
+        return self.occupants[person].eat()
+
+    def enter(self, x, y, person):
+        '''
+        Person enters space at x, y.
+        '''
+        assert person not in self.occupants
+        location = self.getOrMake(x, y)
+        location.enter(person)
+        self.occupants[person] = location
+        person.space = self
 
     def getOrMake(self, x, y):
         '''
@@ -108,9 +174,10 @@ class Space:
             # If there's anybody there, run their program.
             for person in location.occupants[:]:
                 try:
-                    person.program(location)
+                    person.program()
                 except StarvationError:
                     location.leave(person)
+                    del self.occupants[person]
                     # This should be sufficient to cause the person to be
                     # garbage-collected.
 
