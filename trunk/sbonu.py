@@ -42,6 +42,7 @@ class Spore:
     virulence = 0.01
 
     def __init__(self, genus, chain=None):
+        if chain is None: chain = []
         self.genus = genus
         self.chain = self.prepChain(chain)
 
@@ -57,7 +58,7 @@ class Spore:
         parents, preserving the Author at the beginning.
         '''
         if len(chain) > 7:
-            chain = chain[:1] + chain[-6:]
+            chain = [chain[0]] + chain[-6:]
         return chain
 
     def infects(self, person):
