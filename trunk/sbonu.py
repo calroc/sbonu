@@ -103,11 +103,9 @@ class Spore:
             author = self.chain[0]
             cut = 6
             for ancestor in self.chain[:-7:-1]:
-                cut -= 1
                 if ancestor.foods: # not dead..  FIXME
                     ancestor.foods += 1
-                else:
-                    author.foods += 1
+                    cut -= 1
             assert 0 <= cut <= 6
             author.foods += 14 + cut
 
@@ -199,9 +197,9 @@ class NPC(Person):
     b = 10 #  for this many turns
     #         then it's cool to reproduce.
 
-    def reproduce(self, location):
+    def reproduce(self):
         '''
-        Clone self at location.
+        Clone self if conditions are right.
         '''
         # Get the number of turns we've had enough food.
         try:
@@ -210,21 +208,15 @@ class NPC(Person):
             self.turns_o_plenty = self.foods > self.a
             return
 
-        delta = cmp(self.foods, self.a)
-        assert delta in (-1, 0, 1)
-
-        turns_o_plenty += delta
+        turns_o_plenty += cmp(self.foods, self.a)
 
         if turns_o_plenty > self.b:
-            self.clone(location)
-            turns_o_plenty = 0
+            self.turns_o_plenty = 0
+            return self.clone()
 
-        elif turns_o_plenty < 0:
-            turns_o_plenty = 0
+        self.turns_o_plenty = max((turns_o_plenty, 0))
 
-        self.turns_o_plenty = turns_o_plenty
-
-    def clone(self, location):
+    def clone(self):
         '''
         Create a clone of self at location.
         '''
@@ -234,7 +226,6 @@ class NPC(Person):
         for spore in clone.infections:
             spore.register(clone)
         clone.foods = self.foods = self.foods / 2
-        location.enter(clone)
         return clone
 
     def yieldNeighbours(self, location, distance):
@@ -272,7 +263,9 @@ class NPC(Person):
 
         # If you did, consider having a child.
         else:
-            self.reproduce(location)
+            clone = self.reproduce()
+            if clone:
+                location.enter(clone)
 
     def wander(self, location):
         '''
@@ -324,7 +317,7 @@ class NPC(Person):
 from time import sleep
 
 class VIP_NPC(NPC):
-    def reproduce(self, location):
+    def reproduce(self):
         pass
 
 Alice = VIP_NPC()
