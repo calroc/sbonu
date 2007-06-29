@@ -319,6 +319,9 @@ S = Spawner('cats', Alice, testSpore)
 ##Debbie.afflict(Eve)
 
 pad = curses.newpad(DIMENSION + 1, DIMENSION + 1)
+# Top left coordinates of section of space displayed.
+display_x = 0
+display_y = 0
 s = Space(DIMENSION, food_growth_rate=30, pad=pad)
 
 R = random.randint
@@ -358,8 +361,8 @@ def onestep(n, w):
     status = '%.02f %.02f %05i %-i' % (infected, immune, n, int(_N))
 ##    _stdscr.addstr(DIMENSION - 1, DIMENSION, status)
 
-    X, Y = _stdscr.getmaxyx()
-    pad.refresh(0, 0,  0, 0,  X-1, Y-1)
+    Y, X = _stdscr.getmaxyx()
+    pad.refresh(display_y, display_x,  0, 0,  Y-1, X-1)
 
 ##    print '%s %.02f %.02f %05i %-i' % (str(s), infected, immune, n,
 ##                                       int(_N))
@@ -389,6 +392,9 @@ def main():
 
     step_delay = 1.0/23
 
+    global display_y
+    global display_x
+
     try:
         for n in range(10000):
             if onestep(n, writer):
@@ -401,6 +407,20 @@ def main():
                     step_delay *= 0.5
                 elif key == ord('-'):
                     step_delay *= 1.5
+                elif key == curses.KEY_DOWN:
+                    Y, X = _stdscr.getmaxyx()
+                    if DIMENSION - display_y > Y:
+                        display_y += 1
+                elif key == curses.KEY_UP:
+                    if display_y > 0:
+                        display_y -= 1
+                elif key == curses.KEY_RIGHT:
+                    Y, X = _stdscr.getmaxyx()
+                    if DIMENSION - display_x > X:
+                        display_x += 1
+                elif key == curses.KEY_LEFT:
+                    if display_x > 0:
+                        display_x -= 1
                 sleep(step_delay)
 
         POP = list(s.yieldPeople())
