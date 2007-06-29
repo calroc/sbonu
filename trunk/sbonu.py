@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import random
 import curses
+from weakref import ref
 from util import StarvationError
 from space import Space, _calories
 from curses_sbonu import _stdscr
@@ -31,7 +32,7 @@ class Spawner:
         '''
         Create and return a new spore of this genus.
         '''
-        return self.spore_class(self.genus, [self.Author])
+        return self.spore_class(self.genus, [ref(self.Author)])
 
 
 class Spore:
@@ -57,6 +58,7 @@ class Spore:
         The default implementation just returns up to six most recent
         parents, preserving the Author at the beginning.
         '''
+        chain = [wref for wref in chain if wref()]
         if len(chain) > 7:
             chain = [chain[0]] + chain[-6:]
         return chain
@@ -85,7 +87,12 @@ class Spore:
         return False
 
     def register(self, person):
-        self.chain.append(person)
+	def callback(wref):
+            try:
+                self.chain.remove(wref)
+            except ValueError:
+                pass
+        self.chain.append(ref(person, callback))
 
     def spawn(self):
         '''
@@ -96,17 +103,22 @@ class Spore:
 
     def act(self, person):
         if random.random() <= 0.05:
+
             if person.foods <= 100:
                 return
-##            print person, 'has acted on', self
+
+            author = self.chain[0]()
+            if not author:
+                return
+
             person.foods -= 20
-            author = self.chain[0]
             cut = 6
             for ancestor in self.chain[:-7:-1]:
-                if ancestor.foods: # not dead..  FIXME
+                ancestor = ancestor()
+                if ancestor:
                     ancestor.foods += 1
                     cut -= 1
-            assert 0 <= cut <= 6
+
             author.foods += 14 + cut
 
 
@@ -221,7 +233,7 @@ class NPC(Person):
 
     def clone(self):
         '''
-        Create a clone of self at location.
+        Create a clone of self.
         '''
         clone = NPC()
         clone.immunities.update(self.immunities)
@@ -233,7 +245,7 @@ class NPC(Person):
 
     def program(self):
         '''
-        Given self's current location, run a "program" of actions.
+        Run a "program" of actions.
         '''
 
         # Try to eat some food.
@@ -306,7 +318,8 @@ S = Spawner('cats', Alice, testSpore)
 ##Claire.afflict(Debbie)
 ##Debbie.afflict(Eve)
 
-s = Space(DIMENSION, food_growth_rate=30)
+pad = curses.newpad(DIMENSION + 1, DIMENSION + 1)
+s = Space(DIMENSION, food_growth_rate=30, pad=pad)
 
 R = random.randint
 for person in NPCs:
@@ -343,8 +356,10 @@ def onestep(n, w):
     global _stdscr
     s.refresh()
     status = '%.02f %.02f %05i %-i' % (infected, immune, n, int(_N))
-    _stdscr.addstr(DIMENSION - 1, DIMENSION, status)
-    _stdscr.refresh()
+##    _stdscr.addstr(DIMENSION - 1, DIMENSION, status)
+
+    X, Y = _stdscr.getmaxyx()
+    pad.refresh(0, 0,  0, 0,  X-1, Y-1)
 
 ##    print '%s %.02f %.02f %05i %-i' % (str(s), infected, immune, n,
 ##                                       int(_N))
