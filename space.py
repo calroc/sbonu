@@ -25,9 +25,10 @@ class Space:
     Represents a 2-D grid and supports various behaviors.
     '''
 
-    def __init__(self, dimension, food_growth_rate=30):
+    def __init__(self, dimension, food_growth_rate=30, pad=None):
         self.dim = dimension
         self.food_growth_rate = food_growth_rate
+        self.pad=pad
         self.space = {}
         self.occupants = {}
 
@@ -193,14 +194,17 @@ class Space:
         return '\n'.join(''.join(self._row(x)) for x in range(self.dim))
 
     def refresh(self):
-        global _stdscr
+        pad = self.pad
+        if not pad:
+            return
+
         for y in range(self.dim):
-            _stdscr.move(y, 0)
-            _stdscr.clrtoeol()
+            pad.move(y, 0)
+            pad.clrtoeol()
             for x in range(self.dim):
                 L = self.get(x,y)
                 if L:
-                    _stdscr.addstr(y, x, str(L), L.colour())
+                    pad.addstr(y, x, str(L), L.colour())
 
     def _row(self, x):
         for y in range(self.dim):
