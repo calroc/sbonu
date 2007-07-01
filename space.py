@@ -33,6 +33,9 @@ class Space:
         self.occupants = {}
 
     def newLife(self, parent, child):
+        '''
+        A parent has brought a child into the world, take note.
+        '''
         location = self.occupants[parent]
         location.enter(child)
         self.occupants[child] = location
@@ -45,18 +48,24 @@ class Space:
         location = self.occupants[person]
         for place in location.getNearby(distance, Location.occupied):
             for other in place.occupants:
-                if person != other:
+                if other != person:
                     yield other
 
-    def yieldNearbyFoods(self, person):
+    def yieldNearbyFoods(self, person, distance=1):
+        '''
+        Yield (delta-x, delta-y) distance pairs of all food near person.
+        '''
         location = self.occupants[person]
-        nearby_food = location.getNearby(1, lambda loc: bool(loc.food))
+        nearby_food = location.getNearby(distance, lambda n: bool(n.food))
         x, y = location.coords
         for food_spot in nearby_food:
             xx, yy = food_spot.coords
             yield xx - x, yy - y
 
     def move(self, dx, dy, person):
+        '''
+        Move person by dx and dy, return distance travelled.
+        '''
 
         location = self.occupants[person]
 
