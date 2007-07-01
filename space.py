@@ -105,6 +105,15 @@ class Space:
         self.occupants[person] = location
         person.space = self
 
+    def leave(self, person):
+        '''
+        Person leaves space.
+        '''
+        location = self.occupants[person]
+        location.leave(person)
+        del self.occupants[person]
+        person.space = None
+
     def getOrMake(self, x, y):
         '''
         Return the Location at x, y creating it first if there's not one.
@@ -169,44 +178,29 @@ class Space:
                (yy >= top) and (yy <= bottom)
         ]
 
-    def run(self):
-        '''
-        Crude simulation loop.
-        '''
+    def _iterLocations(self):
         # Go through all locations.
         for key, location in list(self.space.items()):
 
             # Clean out any empty locations.
             if location.empty():
                 del self.space[key]
-                continue
 
-            # If there's anybody there, run their program.
-            for person in location.occupants[:]:
-                try:
-                    person.program()
-                except StarvationError:
-                    location.leave(person)
-                    del self.occupants[person]
-                    # This should be sufficient to cause the person to be
-                    # garbage-collected.
+            else:
+                yield location
 
     def yieldPeople(self):
         '''
         Iterate through all the people in the space.
         '''
-        for location in self.space.itervalues():
+        for location in self._iterLocations():
             for person in location.occupants:
                 yield person
 
     def __str__(self):
         return '\n'.join(''.join(self._row(x)) for x in range(self.dim))
 
-    def refresh(self):
-        pad = self.pad
-        if not pad:
-            return
-
+    def refresh(self, pad):
         for y in range(self.dim):
             pad.move(y, 0)
             pad.clrtoeol()

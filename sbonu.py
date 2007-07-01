@@ -23,6 +23,9 @@ class NPC(Infectable):
     b = 10 #  for this many turns
     #         then it's cool to reproduce.
 
+    def __init__(self):
+        Infectable.__init__(self)
+
     def reproduce(self):
         '''
         Clone self if conditions are right.
@@ -109,6 +112,41 @@ class PC(NPC):
     pass
 
 
+class SbonuSimulation:
+
+    def __init__(
+        self,
+        dimension,
+        food_growth_rate,
+        number_of_npcs,
+        initial_food_cycles=3
+        ):
+        self.space = Space(dimension, food_growth_rate)
+
+        random_coord = lambda : random.randint(0, dimension - 1)
+
+        NPCs = tuple(NPC() for _ in xrange(number_of_npcs))
+
+        for person in NPCs:
+            self.space.enter(random_coord(), random_coord(), person)
+
+        for _ in range(initial_food_cycles):
+            self.space.generate()
+
+    def step(self):
+        '''
+        Simulation "step".  Run every NPC's program() once.
+        '''
+        # If there's anybody there, run their program.
+        for person in self.space.yieldPeople():
+            try:
+                person.program()
+            except StarvationError:
+                self.space.leave(person)
+                # This should be sufficient to cause the person to be
+                # garbage-collected.
+        self.space.generate()
+
 #########################################################################
 
 from time import sleep
@@ -118,41 +156,23 @@ class VIP_NPC(NPC):
         pass
 
 Alice = VIP_NPC()
-Bob, Claire, Debbie, Eve = (NPC() for _ in range(4))
-
-ppl = (Alice, Bob, Claire, Debbie, Eve)
-NPCs = tuple(NPC() for _ in range(55)) + ppl
 
 class testSpore(Spore):
     virulence = 0.05
 
 S = Spawner('cats', Alice, testSpore)
 
-##Alice.afflict(Bob)
-##Bob.afflict(Claire)
-##Claire.afflict(Debbie)
-##Debbie.afflict(Eve)
-
 pad = curses.newpad(DIMENSION + 1, DIMENSION + 1)
 # Top left coordinates of section of space displayed.
 display_x = 0
 display_y = 0
-s = Space(DIMENSION, food_growth_rate=30, pad=pad)
 
-R = random.randint
-for person in NPCs:
-    x, y = R(0, DIMENSION - 1), R(0, DIMENSION - 1)
-    s.enter(x, y, person)
-
-for _ in range(3):
-    s.generate()
-
-##print str(s)
-
+sim = SbonuSimulation(DIMENSION, 30, 59)
+s = sim.space
+s.enter(DIMENSION/2, DIMENSION/2, Alice)
 
 def onestep(n, w):
-    s.run()
-    s.generate()
+    sim.step()
 
     POP = list(s.yieldPeople())
     _N = float(len(POP))
@@ -172,9 +192,9 @@ def onestep(n, w):
 
 ##    print '%s %.02f %.02f %05i %-3i %i' % (str(s), infected, immune, n, int(_N), Alice.foods)
     global _stdscr
-    s.refresh()
+    s.refresh(pad)
     status = '%.02f %.02f %05i %-i' % (infected, immune, n, int(_N))
-##    _stdscr.addstr(DIMENSION - 1, DIMENSION, status)
+    _stdscr.addstr(DIMENSION - 1, DIMENSION, status)
 
     Y, X = _stdscr.getmaxyx()
     pad.refresh(display_y, display_x,  0, 0,  Y-1, X-1)
@@ -245,7 +265,7 @@ def main():
         deinit_curses()
 
     print 'Virulence:', testSpore.virulence
-    print 'Initial Population:', len(NPCs)
+    print 'Initial Population:', 60
     print 'Eventual Population:', _N
     print 'Iterations:', n + 1
     print 'Dimensions: %i x %i' % (DIMENSION, DIMENSION)
