@@ -2,6 +2,18 @@ import random
 from weakref import ref
 
 
+def _appendWeakref(list_, obj):
+    '''
+    append() a weakref to object to list_ with a callback that remove()'s
+    the weakref when the object is deleted.
+    '''
+    def callback(wref):
+        try: list_.remove(wref)
+        except ValueError: pass
+    list_.append(ref(obj, callback))
+    return list_
+
+
 class Spawner:
     '''
     Source of spores for a genus, tied to one author.
@@ -17,7 +29,8 @@ class Spawner:
         '''
         Create and return a new spore of this genus.
         '''
-        return self.spore_class(self.genus, [ref(self.Author)])
+        new_chain = _appendWeakref([], self.Author)
+        return self.spore_class(self.genus, new_chain)
 
 
 class Spore:
@@ -72,12 +85,7 @@ class Spore:
         return False
 
     def register(self, person):
-	def callback(wref):
-            try:
-                self.chain.remove(wref)
-            except ValueError:
-                pass
-        self.chain.append(ref(person, callback))
+        _appendWeakref(self.chain, person)
 
     def spawn(self):
         '''
