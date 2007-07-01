@@ -174,26 +174,15 @@ s.enter(DIMENSION/2, DIMENSION/2, Alice)
 def onestep(n, w):
     sim.step()
 
-    POP = list(s.yieldPeople())
-    _N = float(len(POP))
+    pop, infected, immune = s.getStats()
 
-    fud = sum(
-        loc.food.amount
-        for loc in s.space.itervalues()
-        if loc.food
-        )
-
-    infected = sum(1 for npc in POP if npc.infections)/_N
     if infected < 0.008:
         return 'break'
-
-    f = lambda npc: not npc.infections and npc.immunities.get('cats')  == 1
-    immune = sum(1 for npc in POP if f(npc))/_N
 
 ##    print '%s %.02f %.02f %05i %-3i %i' % (str(s), infected, immune, n, int(_N), Alice.foods)
     global _stdscr
     s.refresh(pad)
-    status = '%.02f %.02f %05i %-i' % (infected, immune, n, int(_N))
+    status = '%.02f %.02f %05i %-i' % (infected, immune, n, int(pop))
     _stdscr.addstr(DIMENSION - 1, DIMENSION, status)
 
     Y, X = _stdscr.getmaxyx()
