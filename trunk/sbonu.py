@@ -173,6 +173,13 @@ def setup_sim():
 
 def main():
     print "run 'nice ./curses_sbonu.py' to see UI"
+    Alice, S, sim = setup_sim()
+    for n in xrange(5000):
+        sim.step()
+        pop, infected, immune = sim.space.getStats()
+        print "%.02f %.02f %05i %-i" % (infected, immune, n, pop)
+        if infected + immune >= 1.0:
+            break
 
 if __name__ == '__main__':
     main()
