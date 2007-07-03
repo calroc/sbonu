@@ -61,28 +61,33 @@ class NPC(Infectable):
         clone.foods = self.foods = self.foods / 2
         return clone
 
+    def eat(self):
+        '''
+        Try to eat some food, return bool to indicate success.
+        '''
+        food = self.space.forage(self)
+        self.foods += food
+        if self.foods <= 0:
+            raise StarvationError(repr(self))
+        return bool(food)
+
     def program(self):
         '''
         Run a "program" of actions.
         '''
 
-        # Try to eat some food.
-        food = self.space.forage(self)
-        self.foods += food
-        if self.foods <= 0:
-            raise StarvationError(repr(self))
-
-        # Maybe we tithe to some worthy cause.
         if self.infections:
+
+            # Maybe we tithe to some worthy cause.
             random.choice(self.infections).act(self)
 
-        # Try to afflict one nearby person.
-        People = list(self.space.yieldNeighbours(self, 2))
-        if People:
-            self.afflict(random.choice(People))
+            # Try to afflict one nearby person.
+            People = list(self.space.yieldNeighbours(self, 2))
+            if People:
+                self.afflict(random.choice(People))
 
-        # If you didn't eat this turn, wander around a bit.
-        if not food:
+        # If you don't eat this turn, wander around a bit.
+        if not self.eat():
             self.wander()
 
         # If you did, consider having a child.
