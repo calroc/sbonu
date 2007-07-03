@@ -15,6 +15,12 @@ _spots = tuple((x, y) for x in _R for y in _R if x or y)
 # an NPC move one "space" in one of 8 directions.
 
 
+class StarvationError(Exception):
+    '''
+    Raised by Persons when their food supply goes to zero.
+    '''
+
+
 class NPC(Infectable):
 
     a = 100 # If I've had this much food
