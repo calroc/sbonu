@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 import random
-import curses
 from util import StarvationError
-from space import Space, _calories
+from space import Space
 from spores import Spore, Spawner, Infectable
-from curses_sbonu import _stdscr
 
 # Width and height of the "map".
 DIMENSION = 50
@@ -149,117 +147,26 @@ class SbonuSimulation:
 
 #########################################################################
 
-from time import sleep
+def setup_sim():
 
-class VIP_NPC(NPC):
-    def reproduce(self):
-        pass
+    class VIP_NPC(NPC):
+        def reproduce(self):
+            pass
 
-Alice = VIP_NPC()
+    Alice = VIP_NPC()
 
-class testSpore(Spore):
-    virulence = 0.05
+    class testSpore(Spore):
+        virulence = 0.05
 
-S = Spawner('cats', Alice, testSpore)
+    S = Spawner('cats', Alice, testSpore)
 
-pad = curses.newpad(DIMENSION + 1, DIMENSION + 1)
-# Top left coordinates of section of space displayed.
-display_x = 0
-display_y = 0
+    sim = SbonuSimulation(DIMENSION, 30, 59)
+    sim.space.enter(DIMENSION/2, DIMENSION/2, Alice)
 
-sim = SbonuSimulation(DIMENSION, 30, 59)
-s = sim.space
-s.enter(DIMENSION/2, DIMENSION/2, Alice)
-
-def onestep(n, w):
-    sim.step()
-
-    pop, infected, immune = s.getStats()
-
-    if infected < 0.008:
-        return 'break'
-
-##    print '%s %.02f %.02f %05i %-3i %i' % (str(s), infected, immune, n, int(_N), Alice.foods)
-    global _stdscr
-    s.refresh(pad)
-    status = '%.02f %.02f %05i %-i' % (infected, immune, n, int(pop))
-    _stdscr.addstr(DIMENSION - 1, DIMENSION, status)
-
-    Y, X = _stdscr.getmaxyx()
-    pad.refresh(display_y, display_x,  0, 0,  Y-1, X-1)
-
-##    print '%s %.02f %.02f %05i %-i' % (str(s), infected, immune, n,
-##                                       int(_N))
-##    print '%.02f %.02f %05i %-i' % (infected, immune, n, int(_N))
-
-##    row = (n, infected, immune, _N, fud)
-##    w.writerow(row)
-
-    if infected + immune == 1:
-        return 'break'
-##    print ' '.join('%04i' % (npc.foods,) for npc in NPCs)
-
-def deinit_curses():
-    global _stdscr
-    _stdscr.clear();
-    _stdscr.move(0,0);
-    curses.nocbreak()
-    _stdscr.keypad(0)
-    curses.curs_set(1)
-    curses.echo()
-    curses.endwin()
+    return Alice, S, sim
 
 def main():
-##    import csv
-##    writer = csv.writer(open("sbonu.csv", "wb"))
-    writer = None
-
-    step_delay = 1.0/23
-
-    global display_y
-    global display_x
-
-    try:
-        for n in range(10000):
-            if onestep(n, writer):
-                break
-            else:
-                key = _stdscr.getch()
-                if (key == ord('q')) or (key == ord('Q')):
-                    break
-                elif key == ord('+'):
-                    step_delay *= 0.5
-                elif key == ord('-'):
-                    step_delay *= 1.5
-                elif key == curses.KEY_DOWN:
-                    Y, X = _stdscr.getmaxyx()
-                    if DIMENSION - display_y > Y:
-                        display_y += 1
-                elif key == curses.KEY_UP:
-                    if display_y > 0:
-                        display_y -= 1
-                elif key == curses.KEY_RIGHT:
-                    Y, X = _stdscr.getmaxyx()
-                    if DIMENSION - display_x > X:
-                        display_x += 1
-                elif key == curses.KEY_LEFT:
-                    if display_x > 0:
-                        display_x -= 1
-                sleep(step_delay)
-
-        POP = list(s.yieldPeople())
-        _N = float(len(POP))
-
-    finally:
-        deinit_curses()
-
-    print 'Virulence:', testSpore.virulence
-    print 'Initial Population:', 60
-    print 'Eventual Population:', _N
-    print 'Iterations:', n + 1
-    print 'Dimensions: %i x %i' % (DIMENSION, DIMENSION)
-    print 'Total calories:', _calories
-    print 'Average stored: %.01f' % (sum(npc.foods for npc in POP)/_N,)
+    print "run 'nice ./curses_sbonu.py' to see UI"
 
 if __name__ == '__main__':
     main()
