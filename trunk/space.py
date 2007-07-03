@@ -4,16 +4,7 @@ space.py - Encapsulates the world.  (Which is currently a 2D plane Toroid.
 
 '''
 import random
-import curses
 from math import sqrt
-from util import StarvationError
-from curses_sbonu import (
-    _stdscr,
-    RED_BLACK,
-    GREEN_BLACK,
-    BLUE_BLACK,
-    BLACK_BLACK
-    )
 
 
 # Global count of all "food" that has been put in play.
@@ -200,15 +191,6 @@ class Space:
     def __str__(self):
         return '\n'.join(''.join(self._row(x)) for x in range(self.dim))
 
-    def refresh(self, pad):
-        for y in range(self.dim):
-            pad.move(y, 0)
-            pad.clrtoeol()
-            for x in range(self.dim):
-                L = self.get(x,y)
-                if L:
-                    pad.addstr(y, x, str(L), L.colour())
-
     def _row(self, x):
         for y in range(self.dim):
             L = self.get(x, y)
@@ -343,24 +325,6 @@ class Location:
         elif self.food:
             return 'f'
         return '.'
-
-    def colour(self):
-        # Returns a color_pair (possibly with attribute).
-        n = len(self.occupants)
-        if n:
-            if n == 1:
-                occ = self.occupants[0]
-                if occ.infections:
-                    return curses.color_pair(RED_BLACK)
-                else:
-                    return curses.color_pair(BLUE_BLACK)
-            elif n > 9:
-                return curses.color_pair(BLUE_BLACK)
-            else:
-                return curses.color_pair(BLUE_BLACK)
-        elif self.food:
-            return curses.color_pair(GREEN_BLACK)
-        return curses.color_pair(BLACK_BLACK) | curses.A_BOLD
 
 class Food:
     '''

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-import time
 import pygame
 from pygame.locals import (
     FULLSCREEN,
