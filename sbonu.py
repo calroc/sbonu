@@ -176,15 +176,33 @@ def setup_sim():
 
     return Alice, S, sim
 
+
 def main():
+    try:
+        from IPython.Shell import IPShellEmbed
+    except ImportError:
+        ipshell = None
+    else:
+        ipshell = IPShellEmbed()
+        print 'hit ^c to enter ipython shell,',
+
+    print 'hit ^z to pause'
     print "run 'nice ./curses_sbonu.py' to see UI"
     Alice, S, sim = setup_sim()
-    for n in xrange(5000):
-        sim.step()
-        pop, infected, immune, fud = sim.space.getStats()
-        print "%.02f %.02f %05i %-i" % (infected, immune, n, pop)
-        if infected + immune >= 1.0:
-            break
+    try:
+        for n in xrange(500):
+            sim.step()
+            pop, infected, immune, fud = sim.space.getStats()
+            print "%.02f %.02f %05i %-i" % (infected, immune, n, pop)
+            if infected + immune >= 1.0:
+                break
+        else:
+            raise KeyboardInterrupt
+    except KeyboardInterrupt:
+        if ipshell:
+            pop, infected, immune, fud = sim.space.getStats()
+            print "%.02f %.02f %05i %-i" % (infected, immune, n, pop)
+            ipshell()
 
 if __name__ == '__main__':
 ##    import profile
