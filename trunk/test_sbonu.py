@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import unittest
 import sbonu
 
@@ -21,6 +22,19 @@ class TestNPC(unittest.TestCase):
     
     def setUp(self):
         self.npc = sbonu.NPC()
+
+    def test_whichWay(self):
+        self.npc.space = DummySpace()
+        self.assert_(self.npc.whichWay() in sbonu._spots)
+        self.npc.space.setValues('banana')
+        self.assert_(self.npc.whichWay() == 'banana')
+
+    def test_wander(self):
+        self.npc.space = DummySpace((1, 1))
+        self.npc.space.testor = self
+        n = self.npc.foods
+        self.npc.wander()
+        self.assert_(self.npc.foods == n - 1)
 
     def test_clone(self):
         clone = self.npc.clone()
@@ -72,15 +86,33 @@ class TestNPC(unittest.TestCase):
             self.assert_(result is None)
             self.assert_(self.npc.turns_o_plenty == n + 1)
 
-        result = self.npc.reproduce()
-        self.assert_(bool(result))
-        self.assert_(self.npc.immunities == result.immunities)
-        self.assert_(self.npc.infections == result.infections)
-        self.assert_(self.npc.foods == result.foods)
+        clone = self.npc.reproduce()
+        self.assert_(bool(clone))
+        self.assert_(self.npc.immunities == clone.immunities)
+        self.assert_(self.npc.infections == clone.infections) # I.e. none.
+        self.assert_(self.npc.foods == clone.foods)
         self.assert_(not self.npc.turns_o_plenty)
 
     def tearDown(self):
         self.npc = None
+
+
+class DummySpace:
+
+    def __init__(self, *values):
+        self.values = values
+
+    def setValues(self, *values):
+        self.values = values
+
+    def yieldNearbyFoods(self, npc):
+        for n in self.values:
+            yield n
+
+    def move(self, dx, dy, npc):
+        self.testor.assert_((dx, dy) == (1, 1))
+        self.testor.assert_(npc is self.testor.npc)
+        return 1
 
 
 if __name__ == '__main__':
