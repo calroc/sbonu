@@ -209,13 +209,17 @@ class Space:
             if loc.food
             )
 
-        infected = sum(1 for npc in POP if npc.infections) / N
+        if N == 0:
+            infected = immune = 0
+        else:
 
-        f = lambda npc: not npc.infections and npc.immunities.get('cats')  == 1
-        immune = sum(1 for npc in POP if f(npc)) / N
+            infected = sum(1 for npc in POP if npc.infections) / N
+
+            f = lambda npc: not npc.infections and npc.immunities.get('cats')  == 1
+            immune = sum(1 for npc in POP if f(npc)) / N
 
         # Population, % infected, % immune
-        return N, infected, immune
+        return N, infected, immune, fud
 
 
 class Location:

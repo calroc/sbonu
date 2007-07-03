@@ -61,7 +61,7 @@ pad = curses.newpad(DIMENSION + 1, DIMENSION + 1)
 def onestep(generations, sim, display_y, display_x):
     sim.step()
 
-    pop, infected, immune = sim.space.getStats()
+    pop, infected, immune, fud = sim.space.getStats()
 
     if infected < 0.008:
         return 'break'
