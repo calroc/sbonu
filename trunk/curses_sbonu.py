@@ -70,7 +70,7 @@ def onestep(generations, sim, display_y, display_x):
 
     spaceToPad(sim.space, pad)
     status = '%.02f %.02f %05i %-i' % (infected, immune, generations, int(pop))
-    _stdscr.addstr(DIMENSION - 1, DIMENSION, status)
+##    _stdscr.addstr(DIMENSION - 1, DIMENSION, status)
 
     Y, X = _stdscr.getmaxyx()
     pad.refresh(display_y, display_x,  0, 0,  Y-1, X-1)
