@@ -182,5 +182,7 @@ def main():
             break
 
 if __name__ == '__main__':
+##    import profile
+##    profile.run('main()', 'sbonu.prof')
+##
     main()
-

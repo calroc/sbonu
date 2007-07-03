@@ -205,7 +205,7 @@ class Space:
 
         fud = sum(
             loc.food.amount
-            for loc in self.space.itervalues()
+            for loc in self._iterLocations()
             if loc.food
             )
 
