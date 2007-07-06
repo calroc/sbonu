@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import random
-from util import StarvationError
 from space import Space
 from spores import Spore, Spawner, Infectable
 
